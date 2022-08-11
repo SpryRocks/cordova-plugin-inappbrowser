@@ -40,9 +40,11 @@ public class InAppChromeClient extends WebChromeClient {
     private CordovaWebView webView;
     private String LOG_TAG = "InAppChromeClient";
     private long MAX_QUOTA = 100 * 1024 * 1024;
+    private final InAppBrowser inAppBrowser;
 
-    public InAppChromeClient(CordovaWebView webView) {
+    public InAppChromeClient(InAppBrowser inAppBrowser, CordovaWebView webView) {
         super();
+        this.inAppBrowser = inAppBrowser;
         this.webView = webView;
     }
     /**
@@ -131,7 +133,7 @@ public class InAppChromeClient extends WebChromeClient {
             }
             else {
                 // Anything else with a gap: prefix should get this message
-                LOG.w(LOG_TAG, "InAppBrowser does not support Cordova API calls: " + url + " " + defaultValue); 
+                LOG.w(LOG_TAG, "InAppBrowser does not support Cordova API calls: " + url + " " + defaultValue);
                 result.cancel();
                 return true;
             }
@@ -155,23 +157,26 @@ public class InAppChromeClient extends WebChromeClient {
     @Override
     public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
         WebView inAppWebView = view;
-        final WebViewClient webViewClient =
-                new WebViewClient() {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                        inAppWebView.loadUrl(request.getUrl().toString());
-                        return true;
-                    }
+        class WebViewClient extends android.webkit.WebViewClient {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (inAppBrowser.currentClient != null)
+                    return inAppBrowser.currentClient.shouldOverrideUrlLoading(view, request);
+                inAppWebView.loadUrl(request.getUrl().toString());
+                return true;
+            }
 
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        inAppWebView.loadUrl(url);
-                        return true;
-                    }
-                };
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (inAppBrowser.currentClient != null)
+                    return inAppBrowser.currentClient.shouldOverrideUrlLoading(view, url);
+                inAppWebView.loadUrl(url);
+                return true;
+            }
+        };
 
         final WebView newWebView = new WebView(view.getContext());
-        newWebView.setWebViewClient(webViewClient);
+        newWebView.setWebViewClient(new WebViewClient());
 
         final WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
         transport.setWebView(newWebView);

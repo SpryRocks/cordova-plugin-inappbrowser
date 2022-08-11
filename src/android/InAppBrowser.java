@@ -62,6 +62,8 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.Config;
 import org.apache.cordova.CordovaArgs;
@@ -148,7 +150,8 @@ public class InAppBrowser extends CordovaPlugin {
     private String beforeload = "";
     private boolean fullscreen = true;
     private String[] allowedSchemes;
-    private InAppBrowserClient currentClient;
+    @Nullable
+    public InAppBrowserClient currentClient;
 
     /**
      * Executes the request and returns PluginResult.
@@ -631,6 +634,7 @@ public class InAppBrowser extends CordovaPlugin {
         showZoomControls = true;
         openWindowHidden = false;
         mediaPlaybackRequiresUserGesture = false;
+        beforeload = "";
 
         if (features != null) {
             String show = features.get(LOCATION);
@@ -919,7 +923,7 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 inAppWebView.setId(Integer.valueOf(6));
                 // File Chooser Implemented ChromeClient
-                inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
+                inAppWebView.setWebChromeClient(new InAppChromeClient(InAppBrowser.this, thatWebView) {
                     public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
                     {
                         LOG.d(LOG_TAG, "File Chooser 5.0+");
