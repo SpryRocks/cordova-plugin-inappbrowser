@@ -51,8 +51,8 @@
             strUrl = urlutil.makeAbsolute(strUrl);
             exec(null, null, 'InAppBrowser', 'loadAfterBeforeload', [strUrl]);
         },
-        close: function (eventname) {
-            exec(null, null, 'InAppBrowser', 'close', []);
+        close: function (success) {
+            exec(success, null, 'InAppBrowser', 'close', []);
         },
         show: function (eventname) {
             exec(null, null, 'InAppBrowser', 'show', []);
