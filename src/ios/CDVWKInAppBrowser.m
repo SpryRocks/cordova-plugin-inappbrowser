@@ -51,6 +51,8 @@
 
 static CDVWKInAppBrowser* instance = nil;
 
+NSString* headers = nil;
+
 + (id) getInstance{
     return instance;
 }
@@ -99,6 +101,7 @@ static CDVWKInAppBrowser* instance = nil;
     NSString* url = [command argumentAtIndex:0];
     NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
     NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
+    headers = [command argumentAtIndex:3 withDefault:@"" andClass:[NSString class]];
 
     self.callbackId = command.callbackId;
 
@@ -1113,9 +1116,27 @@ BOOL isExiting = FALSE;
     if ([url.scheme isEqualToString:@"file"]) {
         [self.webView loadFileURL:url allowingReadAccessToURL:url];
     } else {
-        NSURLRequest* request = [NSURLRequest requestWithURL:url];
+        NSURLRequest* request = [self createRequest:url headers:headers];
         [self.webView loadRequest:request];
     }
+}
+
+- (NSURLRequest*)createRequest:(NSURL*)url headers:(NSString*)headers
+{
+    NSMutableURLRequest* request = [[NSMutableURLRequest alloc] initWithURL:url];
+
+    if (headers != nil) {
+        NSArray* pairs = [headers componentsSeparatedByString:@","];
+
+        for (NSString* pair in pairs) {
+            NSArray* keyvalue = [pair componentsSeparatedByString:@":"];
+            NSString* key = [[keyvalue objectAtIndex:0] lowercaseString];
+            NSString* value = [keyvalue objectAtIndex:1];
+            [request setValue:value forHTTPHeaderField:key];
+        }
+    }
+
+    return request;
 }
 
 - (void)goBack:(id)sender
