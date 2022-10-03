@@ -1130,9 +1130,11 @@ BOOL isExiting = FALSE;
 
         for (NSString* pair in pairs) {
             NSArray* keyvalue = [pair componentsSeparatedByString:@":"];
-            NSString* key = [[keyvalue objectAtIndex:0] lowercaseString];
-            NSString* value = [keyvalue objectAtIndex:1];
-            [request setValue:value forHTTPHeaderField:key];
+            if (keyvalue.count >= 2) {
+                NSString* key = [[keyvalue objectAtIndex:0] lowercaseString];
+                NSString* value = [keyvalue objectAtIndex:1];
+                [request setValue:value forHTTPHeaderField:key];
+            }
         }
     }
 
