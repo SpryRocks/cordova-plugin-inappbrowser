@@ -724,6 +724,10 @@ BOOL isExiting = FALSE;
     return self;
 }
 
+-(void)close {
+    [self closeWithCompletion:nil];
+}
+
 -(void)dealloc {
     //NSLog(@"dealloc");
 }
