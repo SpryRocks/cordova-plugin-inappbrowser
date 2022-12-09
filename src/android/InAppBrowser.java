@@ -62,6 +62,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.apache.cordova.CallbackContext;
@@ -84,10 +85,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import java.util.Map;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
-
+//
     private static final String NULL = "null";
     protected static final String LOG_TAG = "InAppBrowser";
     private static final String SELF = "_self";
@@ -133,6 +135,8 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean clearAllCache = false;
     private boolean clearSessionCache = false;
     private boolean hadwareBackButton = true;
+    @Nullable
+    private Map <String, String> extraHeaders;
     private boolean mediaPlaybackRequiresUserGesture = false;
     private boolean shouldPauseInAppBrowser = false;
     private boolean useWideViewPort = true;
@@ -171,6 +175,8 @@ public class InAppBrowser extends CordovaPlugin {
             }
             final String target = t;
             final HashMap<String, String> features = parseFeature(args.optString(2));
+
+            this.extraHeaders = parseHeaders(args.optString(3));
 
             LOG.d(LOG_TAG, "target = " + target);
 
@@ -235,7 +241,7 @@ public class InAppBrowser extends CordovaPlugin {
                         // load in InAppBrowser
                         else {
                             LOG.d(LOG_TAG, "loading in InAppBrowser");
-                            result = showWebPage(url, features);
+                            result = showWebPage(url, features, extraHeaders);
                         }
                     }
                     // SYSTEM
@@ -246,7 +252,7 @@ public class InAppBrowser extends CordovaPlugin {
                     // BLANK - or anything else
                     else {
                         LOG.d(LOG_TAG, "in blank");
-                        result = showWebPage(url, features);
+                        result = showWebPage(url, features, extraHeaders);
                     }
 
                     PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, result);
@@ -275,7 +281,7 @@ public class InAppBrowser extends CordovaPlugin {
                     } else {
                         ((InAppBrowserClient) inAppWebView.getWebViewClient()).waitForBeforeload = false;
                     }
-                    inAppWebView.loadUrl(url);
+                    loadUrlInternal(inAppWebView, url, true);
                 }
             });
         } else if (action.equals("injectScriptCode")) {
@@ -336,6 +342,32 @@ public class InAppBrowser extends CordovaPlugin {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Put the list of headers into a map
+     *
+     * @param headerString
+     * @return
+     */
+    private Map<String, String> parseHeaders(String headerString) {
+        if (headerString.equals(NULL)) {
+            Map<String, String> map = new HashMap<String, String>();
+            return map;
+        } else {
+            Map<String, String> map = new HashMap<String, String>();
+            StringTokenizer features = new StringTokenizer(headerString, ",");
+            StringTokenizer option;
+            while(features.hasMoreElements()) {
+                option = new StringTokenizer(features.nextToken(), ":");
+                if (option.hasMoreElements()) {
+                    String key = option.nextToken();
+                    String value = option.nextToken();
+                    map.put(key, value);
+                }
+            }
+            return map;
+        }
     }
 
     /**
@@ -602,13 +634,12 @@ public class InAppBrowser extends CordovaPlugin {
         imm.hideSoftInputFromWindow(edittext.getWindowToken(), 0);
 
         if (!url.startsWith("http") && !url.startsWith("file:")) {
-            this.inAppWebView.loadUrl("http://" + url);
+            loadUrlInternal(this.inAppWebView, "http://" + url, true);
         } else {
-            this.inAppWebView.loadUrl(url);
+            loadUrlInternal(this.inAppWebView, url, true);
         }
         this.inAppWebView.requestFocus();
     }
-
 
     /**
      * Should we show the location bar?
@@ -629,7 +660,7 @@ public class InAppBrowser extends CordovaPlugin {
      * @param url      the url to load.
      * @param features jsonObject
      */
-    public String showWebPage(final String url, HashMap<String, String> features) {
+    public String showWebPage(final String url, Map<String, String> features, @Nullable Map<String, String> headers) {
         // Determine if we should hide the location bar.
         showLocationBar = true;
         showZoomControls = true;
@@ -1005,7 +1036,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // Enable Thirdparty Cookies
                 CookieManager.getInstance().setAcceptThirdPartyCookies(inAppWebView, true);
 
-                inAppWebView.loadUrl(url);
+                loadUrlInternal(inAppWebView, url, true);
                 inAppWebView.setId(Integer.valueOf(6));
                 inAppWebView.getSettings().setLoadWithOverviewMode(true);
                 inAppWebView.getSettings().setUseWideViewPort(useWideViewPort);
@@ -1467,6 +1498,15 @@ public class InAppBrowser extends CordovaPlugin {
 
             // By default handle 401 like we'd normally do!
             super.onReceivedHttpAuthRequest(view, handler, host, realm);
+        }
+    }
+
+    void loadUrlInternal(@NonNull WebView webView, @NonNull String url, boolean addAdditionalHeaders) {
+        Map<String, String> headers = this.extraHeaders;
+        if (addAdditionalHeaders && headers != null) {
+            webView.loadUrl(url, headers);
+        } else {
+            webView.loadUrl(url);
         }
     }
 }

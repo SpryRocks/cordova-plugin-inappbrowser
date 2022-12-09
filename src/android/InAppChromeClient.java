@@ -162,7 +162,7 @@ public class InAppChromeClient extends WebChromeClient {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (inAppBrowser.currentClient != null)
                     return inAppBrowser.currentClient.shouldOverrideUrlLoading(view, request);
-                inAppWebView.loadUrl(request.getUrl().toString());
+                inAppBrowser.loadUrlInternal(inAppWebView, request.getUrl().toString(), true);
                 return true;
             }
 
@@ -170,7 +170,7 @@ public class InAppChromeClient extends WebChromeClient {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (inAppBrowser.currentClient != null)
                     return inAppBrowser.currentClient.shouldOverrideUrlLoading(view, url);
-                inAppWebView.loadUrl(url);
+                inAppBrowser.loadUrlInternal(inAppWebView, url, true);
                 return true;
             }
         };
